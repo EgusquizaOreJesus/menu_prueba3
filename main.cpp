@@ -18,6 +18,7 @@
 
 
 int main() {
+    std::cout << "moshi moshi" << std::endl;
     App *app = initApp();
     if (app == NULL) {
         return 1;

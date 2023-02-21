@@ -11,6 +11,6 @@ class Player {
 };
 
 
-Player* initPlayer(void);
+
 
 #endif //EXAMPLES_PLAYER_H

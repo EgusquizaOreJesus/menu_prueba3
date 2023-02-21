@@ -6,12 +6,12 @@
 #include "vector"
 #include "iostream"
 
-#define MAP_WIDTH  420
-#define MAP_HEIGHT 420
-#define TILE_SIZE_WIDTH  20     //tamaño de cuadrado
-#define TILE_SIZE_HEIGHT  15
-#define MAZE_WIDTH 20
-#define MAZE_HEIGHT 20
+#define MAP_WIDTH  1125
+#define MAP_HEIGHT 1000
+#define TILE_SIZE_WIDTH  9     //tamaño de cuadrado
+#define TILE_SIZE_HEIGHT  8
+#define MAZE_WIDTH 125
+#define MAZE_HEIGHT 125
 
 
 const static int32_t GL_MIN_PTO = 2;

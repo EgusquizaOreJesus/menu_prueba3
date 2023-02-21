@@ -39,7 +39,7 @@ void runApp(App *const app) {
 
     PlayMusicStream(globalData.music[globalData.theme]);
     while (!WindowShouldClose() && !finished) {
-        UpdateMusicStream(globalData.music[globalData.theme]);
+        //UpdateMusicStream(globalData.music[globalData.theme]);
         updateApp(app);
         drawApp(app);
     }
@@ -65,7 +65,7 @@ static void settingApp() {
     Image iconKAWAI = LoadImage("../textures/icon_windowscompress.png");
     SetWindowIcon(iconKAWAI);
     SetExitKey(KEY_F8);
-    SetTargetFPS(60);
+    SetTargetFPS(500);
 }
 
 static void updateApp(App *const app) {

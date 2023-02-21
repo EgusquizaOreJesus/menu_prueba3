@@ -10,7 +10,7 @@ static void updateMenuOptions(Menu *const menu);
 static void drawMenuOptions(const Menu *const menu);
 static void drawTitle();
 
-Menu *initMenu(void) {
+Menu *initMenu() {
     onOptionEvent = OPT_EMPTY;
     Menu* menu = new Menu;
 

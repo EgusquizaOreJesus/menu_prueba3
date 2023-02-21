@@ -4,8 +4,13 @@
 
 #include "maze2.h"
 #include "iostream"
+#include "Player2.h"
 #include "iomanip"
 using namespace std;
+
+using Pi = std::pair<int,int>;
+static void BFS(Maze2& maze);
+static void DFS(Maze2& maze);
 static bool finished = false;
 static const int32_t MAX_COUNTER = 5;
 static int32_t counter = MAX_COUNTER;
@@ -14,23 +19,42 @@ static void drawCounterScreen(void);
 static void UpdateCounter (void);
 static bool showCounter = true;
 static void resetValues(void);
+
+static int turno = 0;
+Player* Alfa = new Player(1,1,GREEN);
+Player* Beta = new Player(MAZE_HEIGHT-1,MAZE_WIDTH-1,PURPLE);
+
+
 Maze2* initBoard(void) {
+    cout << "INICIALIZO MAZE" << endl;
     std::cout << "gola";
     resetValues();
     Maze2* maze = new Maze2;
     Maze2 a;
-    maze->tam = new int[MAZE_WIDTH*MAZE_WIDTH];
-    a.tam = new int[MAZE_WIDTH*MAZE_WIDTH];
+    maze->tam = new int[MAZE_WIDTH*MAZE_HEIGHT];
+    a.tam = new int[MAZE_WIDTH*MAZE_HEIGHT];
     a.Visited_Coordinates.push({1,1});
-    for (int x = 0; x < MAZE_WIDTH; ++x) {
+    for (int x = 0; x < MAZE_HEIGHT; ++x) {
         for (int y = 0; y < MAZE_WIDTH; ++y) {
             a(x,y) = 0;
         }
     }
     backtraking(a);
+
     *maze = a;
-    maze->target = {MAZE_WIDTH/2, MAZE_WIDTH/2};
-    (*maze)(MAZE_WIDTH/2, MAZE_WIDTH/2) = 2;
+    maze->IA = initBot(1,1);
+    //    for (int x = 0; x < MAZE_HEIGHT; ++x) {
+    //        for (int y = 0; y < MAZE_WIDTH; ++y) {
+    //            std::cout << setw(3)<<(*maze)(x,y) ;
+    //        }
+    //        cout << endl;
+    //    }
+    //    cout << endl;
+
+
+    (*maze)(MAZE_HEIGHT/2, MAZE_WIDTH/2) = 1;
+
+    cout << endl;
     return maze;
 }
 
@@ -54,19 +78,44 @@ void drawMaze2(Maze2 *const maze) {
         drawCounterScreen();
     }
     else{
+        //DFS(*maze);
+        BFS(*maze);
+        //        for (int x = 0; x < MAZE_HEIGHT; ++x) {
+        //            for (int y = 0; y < MAZE_WIDTH; ++y) {
+        //                std::cout << setw(3)<<(*maze)(x,y) ;
+        //            }
+        //            cout << endl;
+        //        }
+        //        cout << endl;
+
         DrawRectangle(maze->target.first * TILE_SIZE_WIDTH, maze->target.first*TILE_SIZE_HEIGHT, TILE_SIZE_WIDTH, TILE_SIZE_HEIGHT, RED);
         for (int x = 0; x < MAZE_HEIGHT; x++) {
             for (int y = 0; y < MAZE_WIDTH; y++) {
-                if (maze->tam[MAZE_WIDTH * x + (MAZE_WIDTH - (MAZE_WIDTH - y))] ==0 ) {
+                if ((*maze)(y,x)==0) {
                     DrawRectangle(float(x * TILE_SIZE_WIDTH), float(y * TILE_SIZE_HEIGHT), TILE_SIZE_WIDTH,
                                   TILE_SIZE_HEIGHT, WHITE);
                 }
+                if ((*maze)(y,x)==2){
+                    DrawRectangle(float(x * TILE_SIZE_WIDTH), float(y * TILE_SIZE_HEIGHT), TILE_SIZE_WIDTH,
+                                  TILE_SIZE_HEIGHT, PINK);
+                }
             }
         }
+        pthread_key_t z;
+        z = GetKeyPressed();
+        pair<int,int> coords_ac {Alfa->getY(),Alfa->getX()};
+        if (Alfa->tecla_val(z) and Alfa->no_salga() and Alfa->sig_cuadro(*maze) and Alfa->col_play(*Beta))
+        {
+            Alfa->avanz_play(z);
+            Alfa->DrawPlayer();
+            Alfa->movement(*Beta, *maze, coords_ac, turno);
+            Alfa->DrawPlayer();
+        }
+        Alfa->DrawPlayer();
     }
 
 }
-void backtraking(Maze2& Alfa) {  // Implementation of Recursive Backtraking
+void backtraking(Maze2& Alfa) {
     if(!Alfa.Visited_Coordinates.empty())
     {
         I current_x=Alfa.Visited_Coordinates.top().first;
@@ -122,10 +171,10 @@ void backtraking(Maze2& Alfa) {  // Implementation of Recursive Backtraking
 
 }
 void updateMaze2(Maze2 *const maze){
-    if (IsKeyPressed(KEY_ESCAPE)) {
+
+    if (IsKeyPressed(KEY_ESCAPE) || Alfa->verf_gan(*maze)) {
         finished = true;
     }
-
 }
 
 bool finishMaze(void) {
@@ -134,22 +183,20 @@ bool finishMaze(void) {
 void freeMaze(Maze2 **maze){
     if (*maze != NULL) {
         free(*maze);
+        free(Alfa);
         *maze = NULL;
-#ifdef PONG_DEBUG
-        TraceLog(LOG_INFO, PONG_BOARD_DELETED);
-#endif
     }
 }
 
 Maze2::Maze2(const Maze2& other){
-    int size = MAZE_WIDTH*MAZE_WIDTH;
-    tam =new int[MAZE_WIDTH*MAZE_WIDTH];
+    int size = MAZE_WIDTH*MAZE_HEIGHT;
+    tam =new int[MAZE_WIDTH*MAZE_HEIGHT];
     copy(other.tam,other.tam + size, tam);
 }
 
 Maze2 &Maze2::operator=(const Maze2 &other) {
     if (this == &other){return *this;}
-    int size = MAZE_WIDTH*MAZE_WIDTH;
+    int size = MAZE_WIDTH*MAZE_HEIGHT;
     delete[] tam;
     tam = new int[size];
     copy(other.tam,other.tam + size, tam);
@@ -182,5 +229,43 @@ static void UpdateCounter (void) {
         showCounter = false;
         counter = MAX_COUNTER;
         prevCounter = 0;
+    }
+}
+static void DFS(Maze2& maze){
+    vector<Pi> Cardinals{{0, -1},{1,0},{0,1},{-1,0}};
+    if (maze.IA->visited_cordinates_bot.top() != maze.target){
+        int tem=0;
+        for (auto Adder: Cardinals){
+            Pi Next = {maze.IA->visited_cordinates_bot.top().first + Adder.first, maze.IA->visited_cordinates_bot.top().second + Adder.second};
+            if (maze(Next.first, Next.second) != 0 and
+                    maze(Next.first, Next.second) != 2 and (Next.first>=0 and Next.first<MAZE_HEIGHT) and ((Next.second>=0 and Next.second<MAZE_WIDTH))){
+                maze(Next.first,Next.second) = 2;
+                maze.IA->visited_cordinates_bot.push(Next);
+                break;
+            }tem++;
+        }
+        if (tem == 4){ maze.IA->visited_cordinates_bot.pop();}
+    }
+}
+static void BFS(Maze2& maze){
+    vector<Pi> Cardinals{{0, 1},{0, -1}, { -1, 0 },{ 1, 0 }}; // East , West , North and South
+
+    if(maze.IA->Frontier.front() != maze.target) {
+        Pi cur_coord = maze.IA->Frontier.front();//Current Coordinates
+
+        maze.IA->Frontier.pop();// Eliminate the first element on qeue that is a visited neighbor
+        cout<<endl;
+        for (auto Adder: Cardinals) {
+
+            Pi Next = {cur_coord.first + Adder.first,
+                       cur_coord.second + Adder.second}; // Establish next possible coordinate
+            if (maze(Next.first, Next.second) != 0 and
+                    maze(Next.first, Next.second) != 2 and (Next.first>=0 and Next.first<MAZE_HEIGHT) and ((Next.second>=0 and Next.second<MAZE_WIDTH)))//Check if next is an avaliable neighbor
+            {
+                maze.IA->Frontier.push(Next);// Add the new neighbor
+                maze(Next.first, Next.second) = 2; // Mark
+                maze.IA->Visited_coords_distance.push(Next);
+            }
+        }
     }
 }
